@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Números de WhatsApp</title>
+<style>
+  :root { --bg:#f5f6f8; --card:#fff; --tx:#111827; --mut:#6b7280; --bd:#e5e7eb; --ok:#15803d; --okbg:#dcfce7; --bad:#b91c1c; --badbg:#fee2e2; --warn:#a16207; --warnbg:#fef9c3; --pri:#111827; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1115; --card:#181b21; --tx:#f3f4f6; --mut:#9ca3af; --bd:#2a2f38; --okbg:#14341f; --badbg:#3b1717; --warnbg:#3a3112; --ok:#86efac; --bad:#fca5a5; --warn:#fde68a; --pri:#f3f4f6; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font:15px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--tx); }
+  .wrap { max-width:960px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:22px; margin:0 0 4px; } .sub { color:var(--mut); margin:0 0 20px; }
+  .card { background:var(--card); border:1px solid var(--bd); border-radius:14px; padding:18px; margin-bottom:16px; }
+  input { width:100%; padding:10px 12px; border:1px solid var(--bd); border-radius:10px; background:transparent; color:var(--tx); font:inherit; }
+  button { padding:9px 14px; border-radius:10px; border:1px solid var(--bd); background:transparent; color:var(--tx); font:inherit; cursor:pointer; }
+  button.pri { background:var(--pri); color:var(--bg); border-color:var(--pri); font-weight:600; }
+  button.del { color:var(--bad); }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end; } .row > div { flex:1 1 180px; }
+  label { display:block; font-size:12px; color:var(--mut); margin-bottom:4px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:16px; }
+  .chip { display:inline-block; padding:2px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+  .c-ok { background:var(--okbg); color:var(--ok); } .c-bad { background:var(--badbg); color:var(--bad); } .c-warn { background:var(--warnbg); color:var(--warn); }
+  .top { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+  .qr { text-align:center; margin:12px 0; min-height:60px; color:var(--mut); font-size:13px; }
+  .qr img { width:230px; height:230px; border:1px solid var(--bd); border-radius:12px; padding:6px; background:#fff; }
+  .acts { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .key { margin-top:10px; padding:10px; border-radius:10px; background:var(--warnbg); color:var(--warn); font-size:13px; word-break:break-all; }
+  .key code { display:block; margin-top:4px; font-size:12px; user-select:all; }
+  .id { color:var(--mut); font-size:12px; }
+  .msg { margin-top:8px; font-size:13px; color:var(--bad); }
+  .checks { display:flex; flex-wrap:wrap; gap:8px 16px; margin-top:6px; font-size:13px; }
+  .checks label { display:flex; align-items:center; gap:6px; margin:0; color:var(--tx); font-size:13px; cursor:pointer; }
+  .checks input { width:auto; }
+  table.log { width:100%; border-collapse:collapse; font-size:12px; }
+  table.log th { text-align:left; color:var(--mut); font-weight:600; padding:6px 8px; border-bottom:1px solid var(--bd); white-space:nowrap; }
+  table.log td { padding:6px 8px; border-bottom:1px solid var(--bd); vertical-align:top; }
+  .tw { overflow-x:auto; }
+  select { padding:9px 12px; border:1px solid var(--bd); border-radius:10px; background:transparent; color:var(--tx); font:inherit; }
+  h2 { font-size:17px; margin:24px 0 10px; }
+  pre.doc { margin:10px 0 0; padding:12px; border-radius:10px; background:var(--bg); border:1px solid var(--bd); font-size:12px; overflow-x:auto; white-space:pre-wrap; word-break:break-all; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Números de WhatsApp</h1>
+  <p class="sub">Cada número tiene su propio QR y su propia clave. Un solo servicio atiende a todos.</p>
+
+  <div class="card" id="loginCard">
+    <div class="row">
+      <div><label>Clave general (SECRET)</label><input id="secret" type="password" autocomplete="off" placeholder="La SECRET del servicio"></div>
+      <div style="flex:0 0 auto"><button class="pri" id="btnLogin">Entrar</button></div>
+    </div>
+    <div class="msg" id="loginMsg"></div>
+  </div>
+
+  <div id="app" hidden>
+    <div class="card">
+      <strong>Agregar un número</strong>
+      <div class="row" style="margin-top:10px">
+        <div><label>Identificador (minúsculas, sin espacios)</label><input id="newId" maxlength="32" placeholder="ventas"></div>
+        <div><label>Nombre</label><input id="newName" maxlength="60" placeholder="WhatsApp de ventas"></div>
+        <div style="flex:0 0 auto"><button class="pri" id="btnAdd">Crear</button></div>
+      </div>
+      <div class="msg" id="addMsg"></div>
+      <div id="newKey"></div>
+    </div>
+    <div class="grid" id="list"></div>
+
+    <h2>Sistemas conectados</h2>
+    <p class="sub">Cada sistema externo recibe su propia clave y tú eliges qué instancias puede usar. El sistema consulta <code>GET /instances</code> y elige en cuál enviar.</p>
+    <div class="card">
+      <strong>Agregar un sistema</strong>
+      <div class="row" style="margin-top:10px">
+        <div><label>Identificador</label><input id="cId" maxlength="32" placeholder="crm"></div>
+        <div><label>Nombre</label><input id="cName" maxlength="60" placeholder="Mi CRM"></div>
+      </div>
+      <label style="margin-top:10px">Instancias permitidas</label>
+      <div class="checks" id="cChecks"></div>
+      <div class="row" style="margin-top:10px"><div style="flex:0 0 auto"><button class="pri" id="btnClient">Crear sistema</button></div></div>
+      <div class="msg" id="cMsg"></div>
+      <div id="cKey"></div>
+    </div>
+    <div class="grid" id="clientList"></div>
+
+    <h2>Registro de peticiones</h2>
+    <p class="sub">Todo lo que llega a la API, incluso lo rechazado por clave incorrecta. No se guarda el texto del mensaje y el teléfono va enmascarado. Si tu sistema envía y aquí no aparece nada, la petición no está llegando a esta API (revisa la URL o la red).</p>
+    <div class="card">
+      <div class="row">
+        <div style="flex:0 0 auto"><label>Mostrar</label><select id="lgOnly"><option value="">Todas</option><option value="errors">Solo errores</option></select></div>
+        <div><label>Buscar (instancia, evento, IP, error…)</label><input id="lgQ" placeholder="farmacia"></div>
+        <div style="flex:0 0 auto"><button id="lgRefresh">Actualizar</button></div>
+        <div style="flex:0 0 auto"><button class="del" id="lgClear">Limpiar registro</button></div>
+      </div>
+      <div class="id" id="lgInfo" style="margin-top:8px"></div>
+      <div class="tw"><table class="log"><thead><tr>
+        <th>Hora</th><th>Quién</th><th>IP</th><th>Evento</th><th>Instancia</th><th>Teléfono</th><th>Resultado</th><th>ms</th>
+      </tr></thead><tbody id="lgBody"></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <strong>Cómo se conecta un sistema</strong>
+      <pre class="doc">1) Ver instancias disponibles
+GET  /instances
+Header: X-Webhook-Secret: CLAVE_DEL_SISTEMA
+
+2) Enviar eligiendo la instancia
+POST /send
+Header: X-Webhook-Secret: CLAVE_DEL_SISTEMA
+{"instance":"ventas","phone":"18095551234","message":"Hola","pdf":{"url":"https://.../a.pdf","filename":"a.pdf"}}</pre>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var SECRET = sessionStorage.getItem('wa_secret') || '';
+  var timer = null;
+  var cards = {};
+
+  function api(method, path, body) {
+    return fetch(path, {
+      method: method,
+      headers: { 'X-Webhook-Secret': SECRET, 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined
+    }).then(function (r) { return r.json().then(function (j) { j._status = r.status; return j; }); });
+  }
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+
+  var STATES = {
+    connected: ['Conectado', 'c-ok'], qr: ['Esperando escaneo', 'c-warn'], starting: ['Iniciando…', 'c-warn'],
+    reconnecting: ['Reconectando…', 'c-warn'], logged_out: ['Desvinculado', 'c-bad']
+  };
+
+  function showKey(box, title, key) {
+    box.textContent = '';
+    var d = el('div', 'key', title);
+    var c = el('code', '', key); d.appendChild(c);
+    box.appendChild(d);
+  }
+
+  function buildCard(s) {
+    var c = el('div', 'card');
+    var top = el('div', 'top');
+    var left = el('div'); left.appendChild(el('strong', '', s.name)); left.appendChild(el('div', 'id', 'id: ' + s.id));
+    var chip = el('span', 'chip'); top.appendChild(left); top.appendChild(chip);
+    var qr = el('div', 'qr'); var info = el('div', 'id'); var keybox = el('div'); var acts = el('div', 'acts');
+
+    var bOut = el('button', '', 'Desvincular');
+    bOut.onclick = function () {
+      if (!confirm('¿Desvincular «' + s.name + '»? Tendrás que escanear un QR nuevo.')) return;
+      api('POST', '/sessions/' + s.id + '/logout').then(refresh);
+    };
+    acts.appendChild(bOut);
+
+    if (s.id !== 'default') {
+      var bKey = el('button', '', 'Nueva clave');
+      bKey.onclick = function () {
+        if (!confirm('La clave anterior dejará de funcionar. ¿Continuar?')) return;
+        api('POST', '/sessions/' + s.id + '/rotate-key').then(function (j) {
+          if (j.ok) showKey(keybox, 'Nueva clave de «' + s.id + '» (cópiala ahora):', j.apiKey);
+        });
+      };
+      var bDel = el('button', 'del', 'Eliminar');
+      bDel.onclick = function () {
+        if (!confirm('¿Eliminar «' + s.name + '» y cerrar su sesión de WhatsApp?')) return;
+        api('DELETE', '/sessions/' + s.id).then(refresh);
+      };
+      acts.appendChild(bKey); acts.appendChild(bDel);
+    } else {
+      info.textContent = 'Número principal: usa la clave general.';
+    }
+    c.appendChild(top); c.appendChild(qr); c.appendChild(info); c.appendChild(acts); c.appendChild(keybox);
+    return { root: c, chip: chip, qr: qr, qrSrc: null };
+  }
+
+  function paint(card, s, qrData) {
+    var st = STATES[s.state] || [s.state, 'c-warn'];
+    card.chip.textContent = st[0]; card.chip.className = 'chip ' + st[1];
+    if (s.state === 'connected') {
+      card.qr.textContent = s.me ? 'Vinculado: +' + s.me : 'Vinculado';
+      card.qrSrc = null;
+    } else if (s.state === 'qr' && qrData && qrData.indexOf('data:image/png;base64,') === 0) {
+      if (card.qrSrc !== qrData) {
+        card.qr.textContent = '';
+        var img = new Image(); img.src = qrData; img.alt = 'QR de WhatsApp';
+        card.qr.appendChild(img);
+        card.qr.appendChild(el('div', '', 'WhatsApp › Dispositivos vinculados › Vincular un dispositivo'));
+        card.qrSrc = qrData;
+      }
+    } else if (!card.qrSrc || s.state !== 'qr') {
+      card.qr.textContent = 'Esperando el código QR…'; card.qrSrc = null;
+    }
+  }
+
+  function refresh() {
+    api('GET', '/sessions').then(function (j) {
+      if (j._status === 401) { logout('Clave incorrecta.'); return; }
+      if (!j.ok) return;
+      $('loginCard').hidden = true; $('app').hidden = false;
+      var list = $('list'), seen = {};
+      j.sessions.forEach(function (s) {
+        seen[s.id] = true;
+        if (!cards[s.id]) { cards[s.id] = buildCard(s); list.appendChild(cards[s.id].root); }
+        var card = cards[s.id];
+        if (s.state === 'qr') {
+          api('GET', '/sessions/' + s.id + '/status').then(function (d) { paint(card, s, d.qr); });
+        } else { paint(card, s, null); }
+      });
+      Object.keys(cards).forEach(function (id) {
+        if (!seen[id]) { cards[id].root.remove(); delete cards[id]; }
+      });
+    }).catch(function () {});
+  }
+
+  /* ---- Sistemas conectados ---- */
+  var instCache = [];
+  function checksHtml(box, selected, name) {
+    box.textContent = '';
+    var all = el('label'); var ca = document.createElement('input'); ca.type = 'checkbox'; ca.value = '*'; ca.name = name;
+    ca.checked = selected.indexOf('*') >= 0; all.appendChild(ca); all.appendChild(document.createTextNode('Todas (incluye las futuras)')); box.appendChild(all);
+    instCache.forEach(function (i) {
+      var l = el('label'); var c = document.createElement('input'); c.type = 'checkbox'; c.value = i.id; c.name = name;
+      c.checked = selected.indexOf(i.id) >= 0; l.appendChild(c); l.appendChild(document.createTextNode(i.name + ' (' + i.id + ')')); box.appendChild(l);
+    });
+  }
+  function picked(box) {
+    var out = []; box.querySelectorAll('input:checked').forEach(function (c) { out.push(c.value); });
+    return out.indexOf('*') >= 0 ? ['*'] : out;
+  }
+  function renderClients(list) {
+    var box = $('clientList'); box.textContent = '';
+    list.forEach(function (c) {
+      var card = el('div', 'card');
+      var left = el('div'); left.appendChild(el('strong', '', c.name)); left.appendChild(el('div', 'id', 'id: ' + c.id));
+      var checks = el('div', 'checks'); checksHtml(checks, c.instances, 'x' + c.id);
+      var keybox = el('div'); var acts = el('div', 'acts');
+      var bSave = el('button', 'pri', 'Guardar instancias');
+      bSave.onclick = function () {
+        api('PUT', '/clients/' + c.id, { instances: picked(checks) }).then(function (j) {
+          if (!j.ok) { alert(j.error || 'No se pudo guardar.'); return; } loadClients();
+        });
+      };
+      var bKey = el('button', '', 'Nueva clave');
+      bKey.onclick = function () {
+        if (!confirm('La clave anterior dejará de funcionar. ¿Continuar?')) return;
+        api('POST', '/clients/' + c.id + '/rotate-key').then(function (j) { if (j.ok) showKey(keybox, 'Nueva clave de «' + c.id + '» (cópiala ahora):', j.apiKey); });
+      };
+      var bDel = el('button', 'del', 'Eliminar');
+      bDel.onclick = function () {
+        if (!confirm('¿Eliminar el sistema «' + c.name + '»? Su clave dejará de funcionar.')) return;
+        api('DELETE', '/clients/' + c.id).then(loadClients);
+      };
+      acts.appendChild(bSave); acts.appendChild(bKey); acts.appendChild(bDel);
+      card.appendChild(left); card.appendChild(checks); card.appendChild(acts); card.appendChild(keybox);
+      box.appendChild(card);
+    });
+  }
+  function loadClients() {
+    api('GET', '/sessions').then(function (j) {
+      if (!j.ok) return; instCache = j.sessions;
+      if (!$('cChecks').querySelector('input')) checksHtml($('cChecks'), [], 'new');
+      return api('GET', '/clients');
+    }).then(function (j) { if (j && j.ok) renderClients(j.clients); });
+  }
+  $('btnClient').onclick = function () {
+    $('cMsg').textContent = ''; $('cKey').textContent = '';
+    api('POST', '/clients', { id: $('cId').value.trim(), name: $('cName').value.trim(), instances: picked($('cChecks')) }).then(function (j) {
+      if (!j.ok) { $('cMsg').textContent = j.error || 'No se pudo crear.'; return; }
+      showKey($('cKey'), 'Clave del sistema «' + j.id + '». Cópiala ahora, no se vuelve a mostrar:', j.apiKey);
+      $('cId').value = ''; $('cName').value = ''; checksHtml($('cChecks'), [], 'new'); loadClients();
+    });
+  };
+
+  /* ---- Registro de peticiones ---- */
+  function loadLogs() {
+    var qs = '?limit=200&only=' + encodeURIComponent($('lgOnly').value) + '&q=' + encodeURIComponent($('lgQ').value.trim());
+    api('GET', '/logs' + qs).then(function (j) {
+      if (!j.ok) return;
+      var body = $('lgBody'); body.textContent = '';
+      $('lgInfo').textContent = j.logs.length ? 'Mostrando ' + j.logs.length + ' de ' + j.total + ' guardadas (las más recientes primero).' : 'Sin peticiones registradas todavía.';
+      j.logs.forEach(function (e) {
+        var tr = document.createElement('tr');
+        var d = new Date(e.t);
+        var res = e.ok ? (e.duplicate ? 'OK (duplicado, no reenviado)' : 'OK') : (e.error || 'Error');
+        [d.toLocaleString(), e.who, e.ip, e.event || e.method + ' ' + e.path, e.instance || '—', e.phone || '—'].forEach(function (v) {
+          tr.appendChild(el('td', '', v));
+        });
+        var td = document.createElement('td');
+        td.appendChild(el('span', 'chip ' + (e.ok ? 'c-ok' : 'c-bad'), 'HTTP ' + e.status));
+        td.appendChild(document.createTextNode(' ' + res));
+        tr.appendChild(td); tr.appendChild(el('td', '', String(e.ms)));
+        body.appendChild(tr);
+      });
+    }).catch(function () {});
+  }
+  $('lgRefresh').onclick = loadLogs;
+  $('lgOnly').onchange = loadLogs;
+  $('lgQ').onkeydown = function (e) { if (e.key === 'Enter') loadLogs(); };
+  $('lgClear').onclick = function () {
+    if (!confirm('¿Borrar todo el registro de peticiones?')) return;
+    api('DELETE', '/logs').then(loadLogs);
+  };
+
+  function login() {
+    SECRET = $('secret').value.trim();
+    if (!SECRET) return;
+    sessionStorage.setItem('wa_secret', SECRET);
+    $('loginMsg').textContent = '';
+    start();
+  }
+  function logout(msg) {
+    SECRET = ''; sessionStorage.removeItem('wa_secret'); clearInterval(timer);
+    $('app').hidden = true; $('loginCard').hidden = false; $('loginMsg').textContent = msg || '';
+  }
+  function start() {
+    refresh(); loadClients(); loadLogs(); clearInterval(timer);
+    timer = setInterval(function () { if (!document.hidden) { refresh(); loadLogs(); } }, 3000);
+  }
+
+  $('btnLogin').onclick = login;
+  $('secret').onkeydown = function (e) { if (e.key === 'Enter') login(); };
+  $('btnAdd').onclick = function () {
+    $('addMsg').textContent = ''; $('newKey').textContent = '';
+    api('POST', '/sessions', { id: $('newId').value.trim(), name: $('newName').value.trim() }).then(function (j) {
+      if (!j.ok) { $('addMsg').textContent = j.error || 'No se pudo crear.'; return; }
+      showKey($('newKey'), 'Clave del número «' + j.id + '». Cópiala ahora y dásela al sistema que lo usará:', j.apiKey);
+      $('newId').value = ''; $('newName').value = ''; refresh(); setTimeout(function () { checksHtml($('cChecks'), picked($('cChecks')), 'new'); loadClients(); }, 300);
+    });
+  };
+  if (SECRET) start();
+})();
+</script>
+</body>
+</html>
